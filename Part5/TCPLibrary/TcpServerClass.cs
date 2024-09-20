@@ -1,23 +1,22 @@
 ﻿using System.Net;
 using System.Net.Sockets;
+using System.Text.Json;
 
 namespace TCPLibrary;
 
 /// <summary>
-/// Represents a TCP server that listens for client connections and processes commands.
+/// Represents a TCP server that handles JSON requests and responses.
 /// </summary>
-/// <param name="serverHost">The server host address. Default is "127.0.0.1".</param>
-/// <param name="serverPort">The server port. Default is 13000.</param>
-public class TcpServerClass(string serverHost = "127.0.0.1", int serverPort = 13000)
+public class TcpServerClassJson(string serverHost = "127.0.0.1", int serverPort = 13001)
 {
     /// <summary>
-    /// Starts the TCP server and listens for client connections asynchronously.
+    /// Starts the TCP server and listens for incoming client connections.
     /// </summary>
     public async Task StartAsync()
     {
         var listener = new TcpListener(IPAddress.Parse(serverHost), serverPort);
         listener.Start();
-        Console.WriteLine($"Server started on port {serverPort}.");
+        Console.WriteLine($"JSON Server started on port {serverPort}.");
 
         while (true)
         {
@@ -28,7 +27,7 @@ public class TcpServerClass(string serverHost = "127.0.0.1", int serverPort = 13
     }
 
     /// <summary>
-    /// Handles the client connection asynchronously.
+    /// Handles communication with a connected client.
     /// </summary>
     /// <param name="client">The connected TCP client.</param>
     private async Task HandleClientAsync(TcpClient client)
@@ -40,23 +39,14 @@ public class TcpServerClass(string serverHost = "127.0.0.1", int serverPort = 13
             using (var reader = new StreamReader(networkStream))
             await using (var writer = new StreamWriter(networkStream) { AutoFlush = true })
             {
-                var command = await ReceiveCommandAsync(reader, writer);
-                if (command == null) return;
+                var requestJson = await reader.ReadLineAsync();
+                Console.WriteLine($"Received JSON: {requestJson}");
 
-                await writer.WriteLineAsync("Input numbers");
+                var response = ProcessRequest(requestJson);
+                var responseJson = JsonSerializer.Serialize(response);
 
-                var numbersInput = await reader.ReadLineAsync();
-                Console.WriteLine($"Received numbers: {numbersInput}");
-
-                if (numbersInput == null || !NumberOps.TryParseNumbers(numbersInput, out var number1, out var number2))
-                {
-                    await writer.WriteLineAsync("Invalid numbers");
-                    return;
-                }
-
-                var result = NumberOps.PerformOperation(command, number1, number2);
-                await writer.WriteLineAsync(result);
-                Console.WriteLine($"Sent result: {result}");
+                await writer.WriteAsync(responseJson);
+                Console.WriteLine($"Sent response: {responseJson}");
             }
         }
         catch (Exception ex)
@@ -70,22 +60,40 @@ public class TcpServerClass(string serverHost = "127.0.0.1", int serverPort = 13
     }
 
     /// <summary>
-    /// Receives the command from the client asynchronously.
+    /// Processes the JSON request and returns a JSON response.
     /// </summary>
-    /// <param name="reader">The stream reader to read data from the client.</param>
-    /// <param name="writer">The stream writer to send data to the client.</param>
-    /// <returns>The received command if valid; otherwise, null.</returns>
-    private async Task<string?> ReceiveCommandAsync(StreamReader reader, StreamWriter writer)
+    /// <param name="requestJson">The JSON request string.</param>
+    /// <returns>A <see cref="JsonResponse"/> object containing the response.</returns>
+    private static JsonResponse ProcessRequest(string? requestJson)
     {
-        var command = await reader.ReadLineAsync();
-        Console.WriteLine($"Received command: {command}");
-
-        if (command == null || !NumberOps.IsValidCommand(command))
+        if (string.IsNullOrEmpty(requestJson))
         {
-            await writer.WriteLineAsync("Invalid command");
-            return null;
+            return new JsonResponse { Status = "error", Message = "Invalid request." };
         }
 
-        return command;
+        try
+        {
+            var request = JsonSerializer.Deserialize<JsonRequest>(requestJson);
+
+            if (request == null || !NumberOps.TryParseCommandAndNumbers($"{request.Method} {request.Number1} {request.Number2}", out var command, out var number1, out var number2))
+            {
+                if (request == null || !NumberOps.IsValidCommand(request.Method))
+                {
+                    return new JsonResponse { Status = "error", Message = "Invalid command." };
+                }
+                if (request.Number1.GetType() != typeof(int) || request.Number2.GetType() != typeof(int))
+                {
+                    return new JsonResponse { Status = "error", Message = "Invalid number." };
+                }
+            }
+
+            var resultJson = NumberOps.PerformOperationJson(request.Method, request.Number1, request.Number2);
+            var result = JsonSerializer.Deserialize<JsonResponse>(resultJson);
+            return result ?? new JsonResponse { Status = "error", Message = "Error processing request." };
+        }
+        catch (Exception ex)
+        {
+            return new JsonResponse { Status = "error", Message = $"Error processing request: {ex.Message}" };
+        }
     }
 }

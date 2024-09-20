@@ -1,99 +1,74 @@
 ﻿using System.Net.Sockets;
+using System.Text.Json;
 
 namespace TCPLibrary;
 
 /// <summary>
-/// Represents a TCP client that connects to a server and sends commands.
+/// Represents a TCP client that communicates with a TCP server using JSON requests and responses.
 /// </summary>
-/// <param name="serverAddress">The server address to connect to. Default is "127.0.0.1".</param>
-/// <param name="port">The server port to connect to. Default is 13000.</param>
-public class TcpClientClass(string serverAddress = "127.0.0.1", int port = 13000)
+public class TcpClientClassJson(string serverAddress = "127.0.0.1", int port = 13001)
 {
     /// <summary>
-    /// Starts the TCP client and attempts to connect to the server multiple times.
+    /// Starts the TCP client and connects to the server.
     /// </summary>
     public async Task StartAsync()
     {
-        for (var i = 0; i < 3; i++)
-        {
-            await ConnectAndCommunicateAsync(i + 1);
-            Console.WriteLine();
-        }
+        await ConnectAndCommunicateAsync();
     }
 
     /// <summary>
-    /// Connects to the server and communicates with it asynchronously.
+    /// Connects to the server and handles communication.
     /// </summary>
-    /// <param name="attempt">The current attempt number.</param>
-    private async Task ConnectAndCommunicateAsync(int attempt)
+    private async Task ConnectAndCommunicateAsync()
     {
         using var client = new TcpClient();
         await client.ConnectAsync(serverAddress, port);
-        Console.WriteLine($"Connected to server (Attempt {attempt}).");
+        Console.WriteLine("Connected to server.");
 
         await using var networkStream = client.GetStream();
         using var reader = new StreamReader(networkStream);
         await using var writer = new StreamWriter(networkStream) { AutoFlush = true };
-        await SendCommandAndProcessResponseAsync(writer, reader);
-    }
 
-    /// <summary>
-    /// Sends a command to the server and processes the server's response asynchronously.
-    /// </summary>
-    /// <param name="writer">The stream writer to send data to the server.</param>
-    /// <param name="reader">The stream reader to read data from the server.</param>
-    private static async Task SendCommandAndProcessResponseAsync(StreamWriter writer, StreamReader reader)
-    {
-        var command = GetUserCommand();
-        await writer.WriteLineAsync(command);
+        var request = GetJsonRequest();
+        await writer.WriteLineAsync(request);
 
         var serverResponse = await reader.ReadLineAsync();
-        if (serverResponse != "Input numbers")
-        {
-            Console.WriteLine($"Server response: {serverResponse ?? "No response from server"}");
-            return;
-        }
-
-        var numbersInput = GetUserNumbers();
-        await writer.WriteLineAsync(numbersInput);
-
-        var result = await reader.ReadLineAsync();
-        Console.WriteLine($"Result: {result ?? "No result from server"}");
+        Console.WriteLine($"Server response: {serverResponse ?? "No response from server"}");
     }
 
     /// <summary>
-    /// Prompts the user to enter a valid command.
+    /// Creates a JSON request based on user input.
     /// </summary>
-    /// <returns>The valid command entered by the user.</returns>
-    private static string GetUserCommand()
+    /// <returns>A JSON-formatted string representing the request.</returns>
+    private static string GetJsonRequest()
     {
-        while (true)
+        var (command, num1, num2) = GetUserCommandAndNumbers();
+
+        var requestObject = new JsonRequest
         {
-            Console.Write("Enter command (Random, Add, Subtract): ");
-            var command = Console.ReadLine();
-            if (command != null && NumberOps.IsValidCommand(command))
-            {
-                return command;
-            }
-            Console.WriteLine("Invalid command. Please try again.");
-        }
+            Method = command,
+            Number1 = num1,
+            Number2 = num2
+        };
+
+        return JsonSerializer.Serialize(requestObject);
     }
 
     /// <summary>
-    /// Prompts the user to enter two valid integers separated by space.
+    /// Prompts the user to enter a command and two numbers, and parses the input.
     /// </summary>
-    /// <returns>The input string containing two valid integers.</returns>
-    private static string GetUserNumbers()
+    /// <returns>A tuple containing the command and two numbers.</returns>
+    private static (string, int, int) GetUserCommandAndNumbers()
     {
         while (true)
         {
-            Console.Write("Enter two numbers separated by space: ");
+            Console.Write("Enter desired command, the first integer, the second integer, all separated by a single space: ");
             var input = Console.ReadLine();
-            if (input != null && NumberOps.TryParseNumbers(input, out _, out _))
+            if (input != null && NumberOps.TryParseCommandAndNumbers(input, out var command, out var num1, out var num2))
             {
-                return input;
+                return (command, num1, num2);
             }
-            Console.WriteLine("Invalid input. Please enter two valid integers separated by space.");
+            Console.WriteLine("Invalid input. Please enter a valid command and two integers separated by space.");
         }
     }
 }

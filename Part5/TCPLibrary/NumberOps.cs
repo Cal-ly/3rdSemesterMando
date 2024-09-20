@@ -11,38 +11,91 @@ public static class NumberOps
         command is "Random" or "Add" or "Subtract";
 
     /// <summary>
-    /// Tries to parse two integers from a given input string.
+    /// Performs the specified operation on two numbers from the JSON object.
     /// </summary>
-    /// <param name="input">The input string containing two space-separated numbers.</param>
-    /// <param name="num1">The first parsed number.</param>
-    /// <param name="num2">The second parsed number.</param>
-    /// <returns>True if both numbers are successfully parsed; otherwise, false.</returns>
-    public static bool TryParseNumbers(string input, out int num1, out int num2)
+    /// <param name="command">The command specifying the operation ("Random", "Add", "Subtract").</param>
+    /// <param name="input1">The first number.</param>
+    /// <param name="input2">The second number.</param>
+    /// <returns>The result of the operation wrapped in a JSON object.</returns>
+    public static string PerformOperationJson(string command, int input1, int input2)
     {
-        num1 = num2 = 0;
-        string[] parts = input.Split(' ');
+        int number1 = (int)input1;
+        int number2 = (int)input2;
 
-        if (parts.Length != 2)
-            return false;
+        var result = command switch
+        {
+            "Random" => GenerateRandomNumber(number1, number2),
+            "Add" => number1 + number2,
+            "Subtract" => number1 - number2,
+            _ => 0
+        };
 
-        return int.TryParse(parts[0], out num1) && int.TryParse(parts[1], out num2);
+        return CreateJsonResponse("success", "Operation completed successfully", result);
     }
 
     /// <summary>
-    /// Performs the specified operation on two numbers.
+    /// Tries to validate the numbers in the JSON object and ensures they are valid integers.
     /// </summary>
-    /// <param name="command">The command specifying the operation ("Random", "Add", "Subtract").</param>
-    /// <param name="number1">The first number.</param>
-    /// <param name="number2">The second number.</param>
-    /// <returns>The result of the operation as a string.</returns>
-    public static string PerformOperation(string command, int number1, int number2) =>
-        command switch
+    /// <param name="json">The JSON string containing the method and two numbers.</param>
+    /// <param name="number1">The first number extracted from the JSON.</param>
+    /// <param name="number2">The second number extracted from the JSON.</param>
+    /// <returns>True if both numbers are valid; otherwise, false.</returns>
+    public static bool TryParseNumbersJson(string json, out int number1, out int number2)
+    {
+        number1 = number2 = 0;
+
+        try
         {
-            "Random" => GenerateRandomNumber(number1, number2).ToString(),
-            "Add" => (number1 + number2).ToString(),
-            "Subtract" => (number1 - number2).ToString(),
-            _ => "Error"
-        };
+            var request = System.Text.Json.JsonSerializer.Deserialize<JsonRequest>(json);
+
+            if (request == null || !IsValidCommand(request.Method))
+            {
+                return false;
+            }
+
+            number1 = request.Number1;
+            number2 = request.Number2;
+
+            return true;
+        }
+        catch (Exception)
+        {
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Parses the command and numbers from the input string.
+    /// </summary>
+    /// <param name="input">The input string containing the command and two numbers.</param>
+    /// <param name="command">The parsed command.</param>
+    /// <param name="number1">The first parsed number.</param>
+    /// <param name="number2">The second parsed number.</param>
+    /// <returns>True if the input is valid; otherwise, false.</returns>
+    public static bool TryParseCommandAndNumbers(string input, out string command, out int number1, out int number2)
+    {
+        command = string.Empty;
+        number1 = number2 = 0;
+
+        var parts = input.Split(' ');
+        if (parts.Length != 3)
+        {
+            return false;
+        }
+
+        command = parts[0];
+        if (!IsValidCommand(command))
+        {
+            return false;
+        }
+
+        if (!int.TryParse(parts[1], out number1) || !int.TryParse(parts[2], out number2))
+        {
+            return false;
+        }
+
+        return true;
+    }
 
     /// <summary>
     /// Generates a random number between the specified range.
@@ -57,5 +110,34 @@ public static class NumberOps
             (number1, number2) = (number2, number1);
         }
         return new Random().Next(number1, number2 + 1);
+    }
+
+    /// <summary>
+    /// Creates a JSON response with the given status, message, and result.
+    /// </summary>
+    /// <param name="status">The status of the response ("success" or "error").</param>
+    /// <param name="message">The message of the response.</param>
+    /// <param name="result">The result of the operation (can be null for errors).</param>
+    /// <returns>A JSON-formatted string with the status, message, and result.</returns>
+    public static string CreateJsonResponse(string status, string message, int result = 0)
+    {
+        var responseObject = new JsonResponse
+        {
+            Status = status,
+            Message = message,
+            Result = result
+        };
+
+        return System.Text.Json.JsonSerializer.Serialize(responseObject);
+    }
+
+    /// <summary>
+    /// Creates a JSON error response with a given message.
+    /// </summary>
+    /// <param name="errorMessage">The error message to include.</param>
+    /// <returns>A JSON-formatted error response.</returns>
+    public static string CreateErrorResponse(string errorMessage)
+    {
+        return CreateJsonResponse("error", errorMessage);
     }
 }
