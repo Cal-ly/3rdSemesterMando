@@ -7,22 +7,28 @@ namespace TCPLibrary;
 /// <summary>
 /// Represents a TCP server that handles JSON requests and responses.
 /// </summary>
+/// <remarks>
+/// Initializes a new instance of the <see cref="TcpServerClassJson"/> class.
+/// </remarks>
+/// <param name="serverHost">The server host address.</param>
+/// <param name="serverPort">The server port number.</param>
 public class TcpServerClassJson(string serverHost = "127.0.0.1", int serverPort = 13001)
 {
     /// <summary>
     /// Starts the TCP server and listens for incoming client connections.
     /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task StartAsync()
     {
         var listener = new TcpListener(IPAddress.Parse(serverHost), serverPort);
-        listener.Start();
+        listener.Start(5); // Start listening with a maximum of 5 pending connections.
         Console.WriteLine($"JSON Server started on port {serverPort}.");
 
         while (true)
         {
             var client = await listener.AcceptTcpClientAsync();
             Console.WriteLine("Client connected.");
-            _ = HandleClientAsync(client);
+            _ = Task.Run(() => HandleClientAsync(client));
         }
     }
 
@@ -30,6 +36,7 @@ public class TcpServerClassJson(string serverHost = "127.0.0.1", int serverPort 
     /// Handles communication with a connected client.
     /// </summary>
     /// <param name="client">The connected TCP client.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     private async Task HandleClientAsync(TcpClient client)
     {
         try
@@ -39,14 +46,45 @@ public class TcpServerClassJson(string serverHost = "127.0.0.1", int serverPort 
             using (var reader = new StreamReader(networkStream))
             await using (var writer = new StreamWriter(networkStream) { AutoFlush = true })
             {
-                var requestJson = await reader.ReadLineAsync();
-                Console.WriteLine($"Received JSON: {requestJson}");
+                while (true)
+                {
+                    string? requestJson;
+                    try
+                    {
+                        requestJson = await reader.ReadLineAsync();
+                    }
+                    catch (IOException ioEx)
+                    {
+                        Console.WriteLine($"IOException: {ioEx.Message}");
+                        break;
+                    }
 
-                var response = ProcessRequest(requestJson);
-                var responseJson = JsonSerializer.Serialize(response);
+                    if (string.IsNullOrEmpty(requestJson))
+                    {
+                        Console.WriteLine("Received empty request. Sending error response.");
+                        var errorResponse = new JsonResponse { Status = "error", Message = "Empty request received." };
+                        var errorResponseJson = JsonSerializer.Serialize(errorResponse);
+                        await writer.WriteLineAsync(errorResponseJson);
+                        continue;
+                    }
 
-                await writer.WriteAsync(responseJson);
-                Console.WriteLine($"Sent response: {responseJson}");
+                    Console.WriteLine($"Received JSON: {requestJson}");
+
+                    var response = ProcessRequest(requestJson);
+                    var responseJson = JsonSerializer.Serialize(response);
+
+                    await writer.WriteLineAsync(responseJson);
+                    Console.WriteLine($"Sent response: {responseJson}");
+
+                    // Prompt the client to decide whether to close the connection
+                    await writer.WriteLineAsync("Do you want to close the connection? (yes/no)");
+                    var closeResponse = await reader.ReadLineAsync();
+                    if (closeResponse?.Trim().ToLower() == "yes" || closeResponse?.Trim().ToLower() == "y")
+                    {
+                        Console.WriteLine("Client chose to close the connection.");
+                        break;
+                    }
+                }
             }
         }
         catch (Exception ex)
