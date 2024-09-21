@@ -1,6 +1,19 @@
-.teach-autumn-2018 {
-    background-color: #f9f9f9;
-    border: 1px solid #e5e5e5;
-    padding: 20px;
-    margin-bottom: 20px;
+.dark-theme {
+    background-color: #333;
+    color: orange;
+}
+
+#teach-autumn-2018 {
+    color: orange;
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.italic {
+  font-style: italic;
+}
+
+.link-cadetblue {
+  text-decoration: none;
+  color: cadetblue;
 }
