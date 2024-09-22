@@ -4,7 +4,7 @@ This repository contains solutions to the first mandatory assignment, 3rd semest
 
 ## Assignment Details
 
-### Trophy Management Repository (Tasks 1 & 2)
+### Tasks 1 & 2: Trophy Management Repository
 
 This solution consists of two projects: `TrophyLibrary` and `TrophyTests`. The `TrophyLibrary` project handles the core functionality of managing trophies, while the `TrophyTests` project ensures the reliability of the system through unit testing.
 
