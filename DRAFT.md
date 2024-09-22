@@ -1,66 +1,56 @@
-## Trophy Management System (Tasks 1 & 2)
+### Task 3: Modernizing the Website
 
-This solution consists of two projects: `TrophyLibrary` and `TrophyTests`. The `TrophyLibrary` project handles the core functionality of managing trophies, while the `TrophyTests` project ensures the reliability of the system through unit testing.
+The solution for Task 3 is located in the `Part3` folder, which contains an updated version of a website with the following features:
 
-### TrophyLibrary
+- **Responsive Design**: The website has been modernized using Bootstrap (imported via CDN) to ensure the layout adapts to different screen sizes, including mobile devices.
+- **Multiple Styles**: The project includes external and internal (inline) CSS as required by the assignment.
+- **Dark Theme Toggle**: A JavaScript feature allows users to toggle between light and dark themes.
+- **Quote of the Day**: JavaScript dynamically loads a "Quote of the Day," which can be refreshed with a button click.
 
-The `TrophyLibrary` project contains two main classes:
+#### Project Files:
 
-- **Trophy**: Represents a trophy with properties `Id`, `Competition`, and `Year`. The class includes:
-  - Validation methods (`ValidateCompetition`, `ValidateYear`, and `Validate`) to ensure valid input for both the `Competition` and `Year` properties.
-  - Overridden methods: `ToString`, `Equals`, and `GetHashCode` to handle string representation, object comparison, and hashing.
+- **index.html**: The main HTML file that includes:
+  - Bootstrap integration using a CDN for responsive layout.
+  - External stylesheet and inline styles to meet the assignment requirements.
+  - Links to various sections, including external links and internal educational content.
+  - A button for toggling dark/light theme using JavaScript.
+  - A section for "Quote of the Day," where JavaScript injects a random motivational quote.
+  
+- **style.css**: The external stylesheet containing styles for both the default and dark themes, as well as custom styles for specific elements, like:
+  - `.dark-theme`: A class to toggle dark mode.
+  - `.italic`: Ensures the quote is displayed in italic.
+  - `.link-cadetblue`: Adds custom link styles for specific links.
 
-- **TrophyRepository**: Manages a collection of `Trophy` objects. This class provides methods for:
-  - **Main methods**
-    - **Get()**: Retrieve all trophies, with optional filtering by year and sorting by `Competition` or `Year`.
-    - **GetById()**: Retrieve a trophy by its ID.
-    - **Add()**: Add a new trophy to the collection.
-    - **Remove()**: Remove a trophy from the collection by its ID.
-    - **Update()**: Update an existing trophy.
-  - **Support methods**:
-    - **GetNextId()**: Gets the next avaliable ID for a new thropy
-    - **GetAll()**: Gets all the thropies in the repo
-    - **FilterBy()**: Filters and sorts list of thropies
+- **script.js**: The JavaScript file that adds interactivity to the page, including:
+  - A `Quote of the Day` feature, which pulls a random quote from a predefined list and displays it on the page.
+  - A `Dark Theme` toggle, which switches between light and dark themes.
+  - Event listeners to handle user interactions, such as clicking buttons to toggle the theme or get a new quote.
 
-`Note` While support methods by convention should be private, they are public in order to test them. Usually such methods are tested as part of another `public` unit test, but for education purposes, they are tested separatly. 
+Example: JavaScript code to toggle themes and update quotes.
 
-Example usage of the `TrophyRepository` class:
+```javascript
+document.addEventListener("DOMContentLoaded", function () {
+  const themeToggle = document.getElementById("themeToggle");
+  const quoteElement = document.getElementById("quote");
+  const newQuoteButton = document.getElementById('newQuoteButton');
 
-### TrophyTests
+  const quotes = [
+    "Code is like humor. When you have to explain it, it’s bad.",
+    "First, solve the problem. Then, write the code."
+    // Additional quotes here...
+  ];
 
-The `TrophyTests` project contains unit tests to ensure the `TrophyLibrary` functions as expected. It uses the MSTest framework and is divided into two categories:
+  function toggleTheme() {
+    document.body.classList.toggle("dark-theme");
+  }
 
-- **TrophyTest**: Tests validation, equality, string representation, and hash code generation for the `Trophy` class.
-- **TrophyRepositoryTest**: Tests the methods of the `TrophyRepository` class, including adding, updating, removing, and retrieving trophies.
+  function updateQuote() {
+    quoteElement.textContent = quotes[Math.floor(Math.random() * quotes.length)];
+  }
 
-Example test from the `TrophyRepositoryTest` class:
+  themeToggle.addEventListener("click", toggleTheme);
+  newQuoteButton.addEventListener('click', updateQuote);
 
-```csharp
-[TestMethod("No filter, Returns all Trophies")]
-public void Get_WithNoFilter_ReturnsAllTrophies()
-{
-    var result = trophyRepository.Get();
-    Assert.AreEqual(5, result.Count); // Ensures the repository returns all predefined trophies
-}
-```
-While I personally like the **Arrange, Act, Assert** partioning of a unit test, including commenting those sections (see code snippet below), I have opted not to, for brevity.
-
-```csharp
-/// <summary>
-/// Tests Update method with a valid ID, expecting the updated trophy.
-/// </summary>
-[TestMethod("Valid ID, Returns Updated Trophy")]
-public void Update_WithValidId_ReturnsUpdatedTrophy()
-{
-    // Arrange
-    var updatedTrophy = new Trophy { Competition = "Champions League", Year = 2022 };
-
-    // Act
-    var result = trophyRepository.Update(1, updatedTrophy);
-
-    // Assert
-    Assert.IsNotNull(result);
-    Assert.AreEqual("Champions League", result.Competition);
-    Assert.AreEqual(2022, result.Year);
-}
+  updateQuote(); // Set initial quote
+});
 ```
