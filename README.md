@@ -85,6 +85,9 @@ I have used the Azure portal to create a Azure Static Web App. The website is ho
 
 Azure Website Link: [Azure Website](https://purple-bay-0d1b29203.5.azurestaticapps.net/)
 
+#### Screenshot from website
+![screenshot-website](https://github.com/Cal-ly/3rdSemesterMando/blob/main/Content/Screenshot-website.png)
+
 #### Project Files:
 
 - **index.html**: The main HTML file that includes:
@@ -156,6 +159,9 @@ The solution is configured to run as **multiple startup projects**. When you sta
 - **Client Console**: In this window, the user can enter commands (`Random`, `Add`, or `Subtract`), which are then sent to the server for processing. The server’s response is displayed in the client console.
 
 This setup allows for real-time interaction between the client and server, demonstrating how TCP communication works through simple requests and responses.
+
+#### Screenshot from Console
+![console-screenshot](https://github.com/Cal-ly/3rdSemesterMando/blob/main/Content/TCPConsols.png)
 
 #### Project Library Details:
 
