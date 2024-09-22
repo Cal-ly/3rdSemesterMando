@@ -133,54 +133,189 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 ```
 
+### Task 4: TCP Server-Client System
 
-### Task 4: TCP Server and Client
-- **Description:** Implemented a TCP server-client system in C# that handles three commands: `Random`, `Add`, and `Subtract`. The communication follows a simple protocol where the server asks for input, processes the command, and responds with the result.
-- **Repository Location:** [Task 4 Repository](Link to Task 4 repository)
+The solution for Task 4 is contained in the [Part4](https://github.com/Cal-ly/3rdSemesterMando/tree/main/Part4) folder. It is a simple implementation of a TCP server-client system in C# that handles three commands: `Random`, `Add`, and `Subtract`. The communication follows a straightforward protocol where the server asks for partial input, processes the command, and returns the result.
 
-### Task 5: JSON Protocol
-- **Description:** Modified the TCP protocol to use JSON objects for communication. The server now accepts JSON requests and responds accordingly, handling the same commands as Task 4 but through a JSON format.
-- **Repository Location:** [Task 5 Repository](Link to Task 5 repository)
+#### Project Overview:
 
-## Instructions
+This solution consists of three projects:
+1. **TCPLibrary**: Contains shared logic for both the server and client.
+2. **TCPClientApp**: A client that connects to the server and communicates using the simple protocol.
+3. **TCPServerApp**: A server that listens for incoming client connections and processes commands.
 
-### Prerequisites
-- [.NET SDK](https://dotnet.microsoft.com/download) (for C# projects)
-- [Visual Studio](https://visualstudio.microsoft.com/) or any compatible IDE
-- [Azure Account](https://azure.microsoft.com/en-us/free/) for website deployment
+#### Command Overview:
+The server handles three main commands:
+- **Random**: Generates a random number between two provided integers.
+- **Add**: Adds two provided integers.
+- **Subtract**: Subtracts the second integer from the first.
 
-### Running the C# Solutions
-1. **Clone the Repository**  
-   Run the following command:
-   ```bash
-   git clone https://github.com/Cal-ly/3rdSemesterMando.git
-   ```
-2. **Navigate to the Project Directory**  
-   Open the project in Visual Studio or any compatible IDE.
+#### Configuration:
+The solution is configured to run as **multiple startup projects**. When you start the solution, both the **TCPServerApp** and **TCPClientApp** projects will launch simultaneously, each in its own console window:
+- **Server Console**: This window listens for incoming client connections and processes commands sent by the client.
+- **Client Console**: In this window, the user can enter commands (`Random`, `Add`, or `Subtract`), which are then sent to the server for processing. The server’s response is displayed in the client console.
 
-3. **Build the Project**  
-   Build the project to restore any necessary dependencies.
+This setup allows for real-time interaction between the client and server, demonstrating how TCP communication works through simple requests and responses.
 
-4. **Run the Unit Tests**  
-   The unit tests for Tasks 1 and 2 can be run via the Test Explorer in Visual Studio.
+#### Project Library Details:
 
-5. **Run the TCP Client and Server**  
-   For Tasks 4 and 5:
-   - Start the server by running the server project.
-   - Start the client by running the client project.
-   - Follow the on-screen prompts for interaction.
+- **TcpServerClass.cs**:
+  - The server listens for client connections on the specified port (default: 13000).
+  - It receives a command from the client, requests numbers, and then performs the requested operation using the `NumberOps` class from the library.
+  - Example snippet:
+    ```csharp
+    var result = NumberOps.PerformOperation(command, number1, number2);
+    await writer.WriteLineAsync(result);
+    ```
+    The server responds with the result of the operation (e.g., random number, sum, or difference).
 
-### Deploying the Website to Azure
-1. Navigate to the project directory for Task 3.
-2. Use the FTP or Kudu console to deploy the website files to Azure.
-3. Ensure the website is responsive by resizing the browser window to test adaptability.
+- **TcpClientClass.cs**:
+  - The client connects to the server, sends a command (e.g., `Random`, `Add`, or `Subtract`), and then provides two numbers for the server to process.
+  - The client can communicate with the server three times in succession.
+  - Example snippet:
+    ```csharp
+    await writer.WriteLineAsync(command);
+    var result = await reader.ReadLineAsync();
+    Console.WriteLine($"Result: {result}");
+    ```
 
-## Additional Resources
-- [Azure FTP Deployment Guide](https://docs.microsoft.com/en-us/azure/app-service/deploy-ftp)
-- [C# TCP Client-Server Example](https://docs.microsoft.com/en-us/dotnet/framework/network-programming/asynchronous-client-socket-example)
-- [JSON in .NET](https://docs.microsoft.com/en-us/dotnet/standard/serialization/system-text-json-overview)
-- [Bootstrap Grid System](https://getbootstrap.com/docs/4.0/layout/grid/)
+- **NumberOps.cs**:
+  - This class is responsible for all the number-related logic, such as validating commands, parsing user inputs, and performing operations like `Add`, `Subtract`, and `Random`.
+  
+  - **Reason for Separation**: `NumberOps` is intentionally separated from the TCP logic to adhere to the **Separation of Concerns** design principle. By keeping the number operations in their own class, the TCP server and client code remain focused solely on managing connections and communication. This makes the code more modular, easier to maintain, and simpler to extend or reuse in other projects.
+  
+  - Example snippet:
+    ```csharp
+    public static string PerformOperation(string command, int number1, int number2) =>
+        command switch
+        {
+            "Random" => GenerateRandomNumber(number1, number2).ToString(),
+            "Add" => (number1 + number2).ToString(),
+            "Subtract" => (number1 - number2).ToString(),
+            _ => "Error"
+        };
+    ```
+  
+  - It also includes helper methods like `IsValidCommand` to validate commands and `TryParseNumbers` to ensure the user inputs two valid integers.
 
----
+#### Additional Information:
+- **Error Handling**: The server and client both handle invalid inputs gracefully. If the user enters an invalid command or malformed numbers, they will receive appropriate error messages without crashing the program.
+- **Asynchronous Operations**: Both the server and client use asynchronous methods (`StartAsync`) to handle multiple tasks without blocking the main thread. This allows the server to continue listening for new clients while processing requests from existing clients.
+  
+This simple client-server system demonstrates how to build and interact with a TCP server, handling user commands through a custom protocol.
 
-Does this look good? Let me know if you'd like any changes or additional sections.
+### Task 5: TCP Server-Client System with JSON Communication
+
+Building on the solution from Task 4, Task 5 modifies the TCP server-client system to communicate using JSON objects instead of simple strings. The client sends structured requests, and the server processes these requests and returns responses, all in JSON format.
+
+#### Project Overview:
+
+This task builds on Task 4 but introduces JSON for communication. The client and server exchange messages in the following JSON formats:
+
+#### JSON Request Format:
+```json
+{
+    "Method": "Add",
+    "Number1": 10,
+    "Number2": 5
+}
+```
+- **Method**: The operation to be performed (`Random`, `Add`, or `Subtract`).
+- **Number1**: The first number to use in the operation.
+- **Number2**: The second number to use in the operation.
+
+#### JSON Response Format:
+```json
+{
+    "Status": "Success",
+    "Message": "Operation completed successfully",
+    "Result": 15
+}
+```
+- **Status**: Indicates whether the operation was successful (`Success`) or not.
+- **Message**: Provides a description of the result or error.
+- **Result**: The outcome of the operation (e.g., the result of addition, subtraction, or a random number).
+
+#### Project Changes:
+
+- **JsonRequest and JsonResponse Classes**:
+  - The JSON communication is handled using the following two classes in the **TCPLibrary**:
+    ```csharp
+    public class JsonRequest
+    {
+        public required string Method { get; set; }
+        public int Number1 { get; set; }
+        public int Number2 { get; set; }
+    }
+    
+    public class JsonResponse
+    {
+        public required string Status { get; set; }
+        public required string Message { get; set; }
+        public int Result { get; set; }
+    }
+    ```
+
+- **Modifications to TcpServerClassJson**:
+  - The server listens for incoming JSON requests from clients. The requests are deserialized into a `JsonRequest` object. The server processes the request and sends back a `JsonResponse` object.
+  
+  - Example snippet:
+    ```csharp
+    var requestJson = await reader.ReadLineAsync();
+    var jsonRequest = JsonSerializer.Deserialize<JsonRequest>(requestJson);
+
+    var resultJson = NumberOps.PerformOperationJson(jsonRequest.Method, jsonRequest.Number1, jsonRequest.Number2);
+
+    var jsonResponse = JsonSerializer.Deserialize<JsonResponse>(resultJson);
+    await writer.WriteLineAsync(JsonSerializer.Serialize(jsonResponse));
+    ```
+
+- **Modifications to TcpClientClassJson**:
+  - The client now sends commands in the form of a `JsonRequest` and receives the result in a `JsonResponse`.
+  
+  - Example snippet:
+    ```csharp
+    var jsonRequest = new JsonRequest
+    {
+        Method = "Add",
+        Number1 = 10,
+        Number2 = 5
+    };
+
+    var requestJson = JsonSerializer.Serialize(jsonRequest);
+    await writer.WriteLineAsync(requestJson);
+
+    var responseJson = await reader.ReadLineAsync();
+    var jsonResponse = JsonSerializer.Deserialize<JsonResponse>(responseJson);
+
+    Console.WriteLine($"Status: {jsonResponse.Status}, Result: {jsonResponse.Result}");
+    ```
+
+#### NumberOps Updates:
+- The `NumberOps` class now includes methods to handle JSON-specific operations:
+  - **PerformOperationJson**: Executes the specified operation based on the JSON request and returns a JSON response.
+  - **TryParseNumbersJson**: Validates the numbers in a JSON object to ensure they are valid integers.
+  - **CreateJsonResponse**: Formats the result of the operation into a JSON object.
+  
+  - Example snippet:
+    ```csharp
+    public static string PerformOperationJson(string command, int number1, int number2)
+    {
+        var result = command switch
+        {
+            "Random" => GenerateRandomNumber(number1, number2),
+            "Add" => number1 + number2,
+            "Subtract" => number1 - number2,
+            _ => 0
+        };
+        
+        return CreateJsonResponse("success", "Operation completed successfully", result);
+    }
+    ```
+
+#### Additional Information:
+- **Error Handling**: The server responds with appropriate JSON error messages if the request is malformed or if an unsupported command is received.
+- **Asynchronous Operations**: Both the server and client use asynchronous methods (`StartAsync`) to handle multiple tasks without blocking the main thread, allowing the server to process requests from multiple clients.
+- **Close Connection**: After processing a request, the server gives the client the option to close the connection or continue sending requests.
+
+This JSON-based client-server system enhances the flexibility and structure of communication, making it easier to extend and maintain.
