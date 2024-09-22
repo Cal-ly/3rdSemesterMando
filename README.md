@@ -21,7 +21,7 @@ This repository contains solutions to the mandatory assignment for the Computer 
 - **Description:** Modernized the website [anbo-easj.dk/index2.htm](https://anbo-easj.dk/index2.htm) using HTML, CSS, and Bootstrap, ensuring responsiveness across different screen sizes.
 - **Deployment:** The website has been deployed to Azure using FTP.
 - **Repository Location:** [Task 3 Repository](Link to Task 3 repository)
-- **Azure Deployment Link:** [Azure Website]([Link to Azure website](https://purple-bay-0d1b29203.5.azurestaticapps.net/)
+- **Azure Deployment Link:** [Azure Website](https://purple-bay-0d1b29203.5.azurestaticapps.net/)
 
 ### Task 4: TCP Server and Client
 - **Description:** Implemented a TCP server-client system in C# that handles three commands: `Random`, `Add`, and `Subtract`. The communication follows a simple protocol where the server asks for input, processes the command, and responds with the result.
